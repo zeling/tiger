@@ -11,8 +11,8 @@ module Language.Tiger.Lexer
        , eat ) where
 
 import qualified Text.Parsec as P
-import Text.Parsec((<|>),(<?>))
-import Data.Text(Text)
+import Text.Parsec ((<|>), (<?>))
+import Data.Text (Text)
 
 data Token = Ident  String
            | StrLit String
@@ -76,7 +76,7 @@ singleToken = P.choice [
     P.try $ "<>" `symbolToken` Neq
   , P.try $ "<=" `symbolToken` Le
   , P.try $ ">=" `symbolToken` Ge
-  , ":="         `symbolToken` Assign
+  , P.try $ ":=" `symbolToken` Assign
   , '<'          `charToken` Lt
   , '>'          `charToken` Gt
   , '='          `charToken` Eq
@@ -118,7 +118,7 @@ singleToken = P.choice [
   ]
 
 skip :: TextParsec ()
-skip = P.skipMany $ P.string "/*" *> P.manyTill P.anyChar (P.string "*/")
+skip = P.skipMany $ P.string "/*" *> P.manyTill P.anyChar (P.try $ P.string "*/")
        <|> P.many1 P.space
 
 pTokenPos :: PToken -> P.SourcePos
