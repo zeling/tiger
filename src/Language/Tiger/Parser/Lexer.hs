@@ -8,7 +8,9 @@ module Language.Tiger.Lexer
        , Tokenizer
        , tokenizer
        , tokenize
-       , eat ) where
+       , eat
+       , getString
+       , getInt ) where
 
 import qualified Text.Parsec as P
 import Text.Parsec ((<|>), (<?>))
@@ -165,6 +167,17 @@ intLit = do
 eat :: Token -> TokenParser ()
 eat tok = P.token show pTokenPos test
   where test ptok = if tok == fst ptok then Just () else Nothing
+
+getString :: TokenParser String
+getString = P.token show pTokenPos strip
+  where strip (StrLit s, _) = Just s
+        strip (Ident s, _) = Just s
+        strip _ = Nothing
+
+getInt :: TokenParser Int
+getInt = P.token show pTokenPos strip
+  where strip (IntLit i, _) = Just i
+        strip _ = Nothing
 
 tokenize :: P.SourceName -> Text -> Either P.ParseError [PToken]
 tokenize = P.parse tokenizer

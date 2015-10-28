@@ -2,9 +2,16 @@
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE UndecidableInstances #-}
 {-# LANGUAGE DeriveFunctor #-}
-module Language.Tiger.AST.Declaration where
-newtype Mu f = In (f (Mu f))
+module Language.Tiger.AST.Declaration
+       ( ExpF(..)
+       , Exp
+       , Dec(..)
+       , Ty(..)
+       , Var(..)
+       , Op(..)
+       , Mu (..) ) where
 
+newtype Mu f = In { out :: f (Mu f) }
 
 type Field = (Symbol, Symbol)
 
