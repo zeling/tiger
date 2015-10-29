@@ -1,18 +1,16 @@
 {-# LANGUAGE StandaloneDeriving #-}
-{-# LANGUAGE FlexibleContexts #-}
-{-# LANGUAGE UndecidableInstances #-}
 {-# LANGUAGE DeriveFunctor #-}
+
 module Language.Tiger.AST.Declaration
        ( ExpF(..)
        , Dec(..)
        , Ty(..)
        , Var(..)
        , Op(..)
-       , Mu (..)
        , Field
        , Exp ) where
 
-newtype Mu f = In { out :: f (Mu f) }
+import Data.Functor.Cata (Mu)
 
 type Field = (String, String)
 
@@ -56,10 +54,6 @@ deriving instance Eq Var
 deriving instance Eq Dec
 deriving instance Eq Ty
 deriving instance Eq Op
-deriving instance (Show (f (Mu f))) => Show (Mu f)
-deriving instance (Ord (f (Mu f))) => Ord (Mu f)
-deriving instance (Eq (f (Mu f))) => Eq (Mu f)
-deriving instance (Read (f (Mu f))) => Read (Mu f)
 deriving instance Functor ExpF
 deriving instance (Show a) => Show (ExpF a)
 deriving instance (Eq a) => Eq (ExpF a)
