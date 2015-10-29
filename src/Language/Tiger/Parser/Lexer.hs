@@ -62,7 +62,6 @@ data Token = Ident  String
            deriving (Show, Eq)
 
 type PToken = (Token, P.SourcePos)
-type Symbol = String
 
 type TextParsec = P.Parsec Text ()
 type Tokenizer = TextParsec [PToken]
@@ -129,10 +128,10 @@ pTokenPos = snd
 charToken :: Char -> Token -> SingleToken
 charToken ch tok = pTok tok <* P.char ch <?> [ch]
 
-symbolToken :: Symbol -> Token -> SingleToken
+symbolToken :: String -> Token -> SingleToken
 symbolToken sym tok = pTok tok <* P.string sym <?> sym
 
-keyword :: Symbol -> Token -> SingleToken
+keyword :: String -> Token -> SingleToken
 keyword key tok = P.try
                   (pTok tok <* P.string key <* P.notFollowedBy P.alphaNum) <?> key
 

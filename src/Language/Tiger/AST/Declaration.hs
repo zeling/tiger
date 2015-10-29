@@ -4,38 +4,37 @@
 {-# LANGUAGE DeriveFunctor #-}
 module Language.Tiger.AST.Declaration
        ( ExpF(..)
-       , Exp
        , Dec(..)
        , Ty(..)
        , Var(..)
        , Op(..)
-       , Mu (..) ) where
+       , Mu (..)
+       , Field
+       , Exp ) where
 
 newtype Mu f = In { out :: f (Mu f) }
 
-type Field = (Symbol, Symbol)
+type Field = (String, String)
 
-data Dec = FunctionDec (Symbol, [Field], Maybe Symbol, Exp)
-         | VarDec Symbol (Maybe Symbol) Exp
-         | TypeDec Symbol Ty
+data Dec = FunctionDec String [Field] (Maybe String) Exp
+         | VarDec String (Maybe String) Exp
+         | TypeDec String Ty
 
-data Ty = NameTy Symbol
+data Ty = NameTy String
         | RecordTy [Field]
-        | ArrayTy Symbol
+        | ArrayTy String
 
-type Symbol = String
-
-data Var = SimpleVar Symbol
-         | FieldVar Var Symbol
+data Var = SimpleVar String
+         | FieldVar Var String
          | SubscriptVar Var Exp
 
 data ExpF a = VarExp Var
             | NilExp
             | IntExp Int
             | StringExp String
-            | CallExp Symbol [a]
+            | CallExp String [a]
             | OpExp a Op a
-            | RecordExp [(Symbol, a)] Symbol
+            | RecordExp [(String, a)] String
             | SeqExp [a]
             | AssignExp Var a
             | IfExp a a (Maybe a)
@@ -43,7 +42,7 @@ data ExpF a = VarExp Var
             | ForExp Var a a a
             | BreakExp
             | LetExp [Dec] a
-            | ArrayExp Symbol a a
+            | ArrayExp String a a
 
 type Exp = Mu ExpF
 
