@@ -44,7 +44,7 @@ data ExpF a = VarExp Var
 
 type Exp = Mu ExpF
 
-data Op = PlusOp | MinusOp | MultOp | DivideOp | EqOp | NeqOp | LtOp | LeOp | GtOp | GeOp
+data Op = PlusOp | MinusOp | MultOp | DivideOp | EqOp | NeqOp | LtOp | LeOp | GtOp | GeOp | AndOp | OrOp
 
 deriving instance Show Var
 deriving instance Show Dec

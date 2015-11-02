@@ -10,6 +10,7 @@ module Language.Tiger.Lexer
        , tokenize
        , eat
        , getString
+       , getIdent
        , getInt ) where
 
 import qualified Text.Parsec as P
@@ -38,8 +39,8 @@ data Token = Ident  String
            | Assign
            | LBrace
            | RBrace
-           | LParan
-           | RParan
+           | LParen
+           | RParen
            | LBrack
            | RBrack
            | Var
@@ -85,8 +86,8 @@ singleToken = P.choice [
   , '-'          `charToken` Minus
   , '*'          `charToken` Mult
   , '/'          `charToken` Div
-  , '('          `charToken` LParan
-  , ')'          `charToken` RParan
+  , '('          `charToken` LParen
+  , ')'          `charToken` RParen
   , '['          `charToken` LBrack
   , ']'          `charToken` RBrack
   , '{'          `charToken` LBrace
@@ -170,7 +171,11 @@ eat tok = P.token show pTokenPos test
 getString :: TokenParser String
 getString = P.token show pTokenPos strip
   where strip (StrLit s, _) = Just s
-        strip (Ident s, _) = Just s
+        strip _ = Nothing
+
+getIdent :: TokenParser String
+getIdent = P.token show pTokenPos strip
+  where strip (Ident s, _) = Just s
         strip _ = Nothing
 
 getInt :: TokenParser Int
