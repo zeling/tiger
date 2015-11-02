@@ -15,10 +15,10 @@ data AccessF a = Subscript Exp a
 
 type Access = Mu AccessF
 
-lvalAlg :: String -> Algebra AccessF Var
-lvalAlg s (Subscript exp var) = SubscriptVar var exp
-lvalAlg s (Field field var) = FieldVar var field
-lvalAlg s None = SimpleVar s
+lvalAlg :: Algebra AccessF (Var -> Var)
+lvalAlg (Subscript exp var) = \v -> SubscriptVar (var v) exp
+lvalAlg (Field field var) = \v -> FieldVar (var v) field
+lvalAlg None = id
 
 dec :: TokenParser Dec
 dec = tyDec
@@ -54,11 +54,17 @@ tyField = P.sepBy ((,) <$> getString <*> getString) (eat Comma)
 optionalTypeId :: TokenParser (Maybe String)
 optionalTypeId = P.optionMaybe (eat Colon *> getString)
 
-lval :: TokenParser Access
-lval = undefined
+lval' :: TokenParser (String, Access)
+lval' = (,) <$> getString <*> lvalAcc
 
-lval' :: TokenParser Access
-lval' = undefined
+lvalAcc :: TokenParser Access
+lvalAcc = Mu <$> (P.option None $
+          Field <$> (eat Dot *> getString) <*> lvalAcc
+          <|> Subscript <$> (eat LBrack *> expression <* eat RBrack) <*> lvalAcc)
+
+lval :: TokenParser Var
+lval = tolval <$> lval'
+       where tolval (s, a) = cata lvalAlg a $ (SimpleVar s)
 
 expression :: TokenParser exp
 expression = undefined
