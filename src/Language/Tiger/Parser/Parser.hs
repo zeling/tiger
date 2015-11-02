@@ -9,15 +9,15 @@ import qualified Text.Parsec as P
 import Text.Parsec ((<|>), (<?>))
 
 data AccessF a = Subscript Exp a
-             | Field String a
-             | None
-             deriving (Show, Functor)
+               | Field String a
+               | None
+               deriving (Show, Functor)
 
 type Access = Mu AccessF
 
 lvalAlg :: Algebra AccessF (Var -> Var)
-lvalAlg (Subscript exp var) = \v -> SubscriptVar (var v) exp
-lvalAlg (Field field var) = \v -> FieldVar (var v) field
+lvalAlg (Subscript exp var) = \v -> var $ SubscriptVar v exp
+lvalAlg (Field field var) = \v -> var $ FieldVar v field
 lvalAlg None = id
 
 dec :: TokenParser Dec
@@ -63,8 +63,8 @@ lvalAcc = Mu <$> (P.option None $
           <|> Subscript <$> (eat LBrack *> expression <* eat RBrack) <*> lvalAcc)
 
 lval :: TokenParser Var
-lval = tolval <$> lval'
-       where tolval (s, a) = cata lvalAlg a $ (SimpleVar s)
+lval = toVar <$> lval'
+       where toVar (s, a) = cata lvalAlg a $ (SimpleVar s)
 
 expression :: TokenParser exp
 expression = undefined
