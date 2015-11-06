@@ -47,6 +47,9 @@ funDec = FunctionDec
          <*> optionalTypeId
          <*> (eat Eq *> expression)
 
+callExp :: TokenParser Exp
+callExp = Mu <$> (CallExp <$> getIdent <*> (eat LParen *> P.many expression <* eat RParen))
+
 ty :: TokenParser Ty
 ty = NameTy <$> getIdent
      <|> RecordTy <$> (eat LBrace *> tyField <* eat RBrace)
@@ -68,11 +71,11 @@ lvalAcc = Mu <$> (P.option None $
 
 lval :: TokenParser Var
 lval = toVar <$> lval'
-       where toVar (s, a) = cata lvalAlg a $ (SimpleVar s)
+  where toVar (s, a) = cata lvalAlg a $ (SimpleVar s)
 
 infixExp :: TokenParser Exp
 infixExp =  buildExpressionParser operators termExp
-           where operators =
+  where operators =
                    [ [ op Mult MultOp AssocLeft, op Div DivideOp AssocLeft ]
                    , [ op Plus PlusOp AssocLeft, op Minus MinusOp AssocLeft ]
                    , [ op Eq EqOp AssocNone, op Neq NeqOp AssocNone
@@ -80,7 +83,7 @@ infixExp =  buildExpressionParser operators termExp
                      , op Ge GeOp AssocNone, op Gt GtOp AssocNone ]
                    , [ op And AndOp AssocRight ]
                    , [ op Or OrOp AssocRight ] ]
-                 op tok o assoc = Infix (eat tok *> pure ((flip $ ((.).(.).(.)) Mu OpExp) o)) assoc
+        op tok o assoc = Infix (eat tok *> pure ((flip $ ((.).(.).(.)) Mu OpExp) o)) assoc
 
 
 termExp :: TokenParser Exp
@@ -90,10 +93,16 @@ termExp = P.choice
             , (Mu . VarExp) <$> lval ]
 
 intLiteral :: TokenParser Exp
-intLiteral = Mu <$> (IntExp <$> getInt)
+intLiteral = Mu <$> (IntExp <$> integer)
+  where integer = sign <*> getInt
+        sign = P.option id $ (eat Minus *> pure negate)
 
 stringLiteral :: TokenParser Exp
 stringLiteral = Mu <$> (StringExp <$> getString)
 
 literal :: TokenParser Exp
 literal = intLiteral <|> stringLiteral
+
+parseTiger name text = case tokenize name text of
+  Left err -> error $ show err
+  Right toks -> P.parse infixExp "" toks

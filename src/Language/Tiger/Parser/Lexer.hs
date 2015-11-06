@@ -120,7 +120,7 @@ singleToken = P.choice [
   ]
 
 skip :: TextParsec ()
-skip = P.skipMany $ P.string "/*" *> P.manyTill P.anyChar (P.try $ P.string "*/")
+skip = P.skipMany $ P.try $ P.string "/*" *> P.manyTill P.anyChar (P.try $ P.string "*/")
        <|> P.many1 P.space
 
 pTokenPos :: PToken -> P.SourcePos
