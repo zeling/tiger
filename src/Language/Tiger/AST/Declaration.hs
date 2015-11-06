@@ -32,14 +32,14 @@ data ExpF a = VarExp Var
             | StringExp String
             | CallExp String [a]
             | OpExp a Op a
-            | RecordExp [(String, a)] String
+            | RecordExp String [(String, a)]
             | SeqExp [a]
             | AssignExp Var a
             | IfExp a a (Maybe a)
             | WhileExp a a
             | ForExp Var a a a
             | BreakExp
-            | LetExp [Dec] a
+            | LetExp [Dec] [a]
             | ArrayExp String a a
 
 type Exp = Mu ExpF

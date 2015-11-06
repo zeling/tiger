@@ -50,6 +50,47 @@ funDec = FunctionDec
 callExp :: TokenParser Exp
 callExp = Mu <$> (CallExp <$> getIdent <*> (eat LParen *> P.many expression <* eat RParen))
 
+assignExp :: TokenParser Exp
+assignExp = Mu <$> (AssignExp <$> lval <*> (eat Assign *> expression))
+
+ifExp :: TokenParser Exp
+ifExp = Mu <$> (IfExp <$> (eat If *> expression) <*> (eat Then *> expression) <*> (P.optionMaybe (eat Else *> expression)))
+
+whileExp :: TokenParser Exp
+whileExp = Mu <$> (WhileExp <$> (eat While *> expression) <*> (eat Do *> expression))
+
+forExp :: TokenParser Exp
+forExp = Mu <$> (ForExp <$> (eat For *> (SimpleVar <$> getIdent))
+                <*> (eat Assign *> expression)
+                <*> (eat To *> expression)
+                <*> (eat Do *> expression))
+
+nilExp :: TokenParser Exp
+nilExp = Mu <$> (eat Nil *> pure NilExp)
+
+breakExp :: TokenParser Exp
+breakExp = Mu <$> (eat Break *> pure BreakExp)
+
+letExp :: TokenParser Exp
+letExp = Mu <$> (LetExp <$>
+                 (eat Let *> P.many1 dec)
+                 <*> (eat In *>
+                      (expression `P.sepBy1` (eat Semi))
+                      <* eat End))
+
+seqExp :: TokenParser Exp
+seqExp = Mu <$> (SeqExp <$> (eat LParen *> (expression `P.sepBy1` (eat Semi)) <* eat RParen))
+
+arrayExp :: TokenParser Exp
+arrayExp = Mu <$> (ArrayExp <$> getIdent
+                  <*> (eat LBrack *> expression <* eat RBrack)
+                  <*> (eat Of *> expression))
+
+recordExp :: TokenParser Exp
+recordExp = Mu <$> (RecordExp <$> getIdent
+                   <*> ((,) <$> (getIdent <* eat Eq) <*> expression)
+                   `P.sepBy` (eat Comma))
+
 ty :: TokenParser Ty
 ty = NameTy <$> getIdent
      <|> RecordTy <$> (eat LBrace *> tyField <* eat RBrace)
@@ -73,8 +114,8 @@ lval :: TokenParser Var
 lval = toVar <$> lval'
   where toVar (s, a) = cata lvalAlg a $ (SimpleVar s)
 
-infixExp :: TokenParser Exp
-infixExp =  buildExpressionParser operators termExp
+opExp :: TokenParser Exp
+opExp =  buildExpressionParser operators termExp
   where operators =
                    [ [ op Mult MultOp AssocLeft, op Div DivideOp AssocLeft ]
                    , [ op Plus PlusOp AssocLeft, op Minus MinusOp AssocLeft ]
@@ -105,4 +146,4 @@ literal = intLiteral <|> stringLiteral
 
 parseTiger name text = case tokenize name text of
   Left err -> error $ show err
-  Right toks -> P.parse infixExp "" toks
+  Right toks -> P.parse opExp "" toks
