@@ -152,10 +152,12 @@ opExp =  buildExpressionParser operators termExp
 
 termExp :: TokenParser Exp
 termExp = P.choice
-            [ intLiteral
+            [ literal
             , (eat LParen *> expression <* eat RParen)
             , P.try $ callExp
             , P.try $ varExp
+            , P.try $ recordExp
+            , P.try $ arrayExp
             , nilExp
             ]
 
@@ -183,5 +185,5 @@ parseTiger name text = case tokenize name text of
 --                  let s = "/Users/zeling/workspace/code/haskell/tiger-bak/testcases/test" ++ (show i) ++ ".tig"
 --                  c <- T.readFile s
 --                  case parseTiger s c of
---                    Left _ -> return False
---                    Right _ -> return True
+--                   Left _ -> return False
+--                   Right _ -> return True
