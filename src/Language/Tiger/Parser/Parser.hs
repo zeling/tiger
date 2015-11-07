@@ -9,6 +9,8 @@ import qualified Text.Parsec as P
 import Text.Parsec.Expr (buildExpressionParser, Operator(..), Assoc(..))
 import Text.Parsec ((<|>), (<?>))
 
+-- import qualified Data.Text.IO as T
+
 data AccessF a = Subscript Exp a
                | Field String a
                | None
@@ -22,7 +24,24 @@ lvalAlg (Field field var) = \v -> var $ FieldVar v field
 lvalAlg None = id
 
 expression :: TokenParser Exp
-expression = undefined
+expression = P.choice . map P.try $
+             [ nilExp
+             , assignExp
+             , callExp
+             , arrayExp
+             , recordExp
+             , opExp
+             , seqExp
+             , ifExp
+             , whileExp
+             , forExp
+             , breakExp
+             , letExp
+             , varExp
+             , unitExp
+             , literal
+             ]
+
 
 dec :: TokenParser Dec
 dec = tyDec
@@ -32,7 +51,7 @@ dec = tyDec
 tyDec :: TokenParser Dec
 tyDec = TypeDec
         <$> (eat Type *> getIdent)
-        <*> (eat Assign *> ty)
+        <*> (eat Eq *> ty)
 
 varDec :: TokenParser Dec
 varDec = VarDec
@@ -48,7 +67,7 @@ funDec = FunctionDec
          <*> (eat Eq *> expression)
 
 callExp :: TokenParser Exp
-callExp = Mu <$> (CallExp <$> getIdent <*> (eat LParen *> P.many expression <* eat RParen))
+callExp = Mu <$> (CallExp <$> getIdent <*> (eat LParen *> (expression `P.sepBy` (eat Comma)) <* eat RParen))
 
 assignExp :: TokenParser Exp
 assignExp = Mu <$> (AssignExp <$> lval <*> (eat Assign *> expression))
@@ -87,9 +106,10 @@ arrayExp = Mu <$> (ArrayExp <$> getIdent
                   <*> (eat Of *> expression))
 
 recordExp :: TokenParser Exp
-recordExp = Mu <$> (RecordExp <$> getIdent
-                   <*> ((,) <$> (getIdent <* eat Eq) <*> expression)
-                   `P.sepBy` (eat Comma))
+recordExp = Mu <$> (RecordExp <$> getIdent <*> (nil <|> body))
+  where body = eat LBrace *> ((,) <$> (getIdent <* eat Eq) <*> expression)
+                   `P.sepBy` (eat Comma) <* eat RBrace
+        nil = eat Nil *> pure []
 
 ty :: TokenParser Ty
 ty = NameTy <$> getIdent
@@ -97,7 +117,7 @@ ty = NameTy <$> getIdent
      <|> ArrayTy <$> (eat Array *> eat Of *> getIdent)
 
 tyField :: TokenParser [Field]
-tyField = P.sepBy ((,) <$> getIdent <*> getIdent) (eat Comma)
+tyField = ((,) <$> (getIdent <* eat Colon) <*> getIdent) `P.sepBy` (eat Comma)
 
 optionalTypeId :: TokenParser (Maybe String)
 optionalTypeId = P.optionMaybe (eat Colon *> getIdent)
@@ -113,6 +133,9 @@ lvalAcc = Mu <$> (P.option None $
 lval :: TokenParser Var
 lval = toVar <$> lval'
   where toVar (s, a) = cata lvalAlg a $ (SimpleVar s)
+
+varExp :: TokenParser Exp
+varExp = Mu <$> (VarExp <$> lval)
 
 opExp :: TokenParser Exp
 opExp =  buildExpressionParser operators termExp
@@ -131,7 +154,10 @@ termExp :: TokenParser Exp
 termExp = P.choice
             [ intLiteral
             , (eat LParen *> expression <* eat RParen)
-            , (Mu . VarExp) <$> lval ]
+            , P.try $ callExp
+            , P.try $ varExp
+            , nilExp
+            ]
 
 intLiteral :: TokenParser Exp
 intLiteral = Mu <$> (IntExp <$> integer)
@@ -144,6 +170,18 @@ stringLiteral = Mu <$> (StringExp <$> getString)
 literal :: TokenParser Exp
 literal = intLiteral <|> stringLiteral
 
+unitExp :: TokenParser Exp
+unitExp = Mu <$> (eat LParen *> eat RParen *> pure UnitExp)
+
 parseTiger name text = case tokenize name text of
   Left err -> error $ show err
-  Right toks -> P.parse opExp "" toks
+  Right toks -> P.parse expression "" toks
+
+-- test :: IO [Bool]
+-- test = do (flip mapM) [1..49] $ \i ->
+--                do
+--                  let s = "/Users/zeling/workspace/code/haskell/tiger-bak/testcases/test" ++ (show i) ++ ".tig"
+--                  c <- T.readFile s
+--                  case parseTiger s c of
+--                    Left _ -> return False
+--                    Right _ -> return True

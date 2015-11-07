@@ -93,6 +93,7 @@ singleToken = P.choice [
   , '{'          `charToken` LBrace
   , '}'          `charToken` RBrace
   , '.'          `charToken` Dot
+  , ','          `charToken` Comma
   , ';'          `charToken` Semi
   , ':'          `charToken` Colon
   , '|'          `charToken` Or
@@ -134,7 +135,7 @@ symbolToken sym tok = pTok tok <* P.string sym <?> sym
 
 keyword :: String -> Token -> SingleToken
 keyword key tok = P.try
-                  (pTok tok <* P.string key <* P.notFollowedBy P.alphaNum) <?> key
+                  (pTok tok <* P.string key <* P.notFollowedBy (P.alphaNum <|> P.char '_')) <?> key
 
 pTok :: Token -> SingleToken
 pTok tok = (,) <$> pure tok <*> P.getPosition

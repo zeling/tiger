@@ -27,6 +27,7 @@ data Var = SimpleVar String
          | SubscriptVar Var Exp
 
 data ExpF a = VarExp Var
+            | UnitExp
             | NilExp
             | IntExp Int
             | StringExp String
@@ -41,6 +42,7 @@ data ExpF a = VarExp Var
             | BreakExp
             | LetExp [Dec] [a]
             | ArrayExp String a a
+            
 
 type Exp = Mu ExpF
 
