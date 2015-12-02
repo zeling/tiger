@@ -1,4 +1,4 @@
-{-# LANGUAGE DerivingFunctor #-}
+{-# LANGUAGE DeriveFunctor #-}
 module Language.Tiger.TypeChecker.Type
        () where
 
@@ -7,33 +7,41 @@ import Language.Tiger.AST
 import qualified Data.Map as M
 import Control.Monad.Reader
 
-data Type a = IntTy
-            | StringTy
-            | FuncTy [Type] Type
-            | UnitTy
-            | NilTy
-            deriving (Eq, Show, Functor)
+data Type = IntTy
+          | StringTy
+          | FuncTy [Type] Type
+          | UnitTy
+          | NilTy
+          deriving (Eq, Show)
 
 type Env = M.Map String Type
+type TypeCheck = Reader Env (Maybe Type)
 
 -- newtype TypeCheck = TypeCheck { runTypeCheck :: Reader Env Type }
 
 -- type Type = Mu TypeF
 
 typeCheck :: Exp -> Maybe Type
-typeCheck exp = runReader (cata checkAlg exp) empty
+typeCheck = extract . cata checkAlg
 
-checkAlg :: ExpF -> Reader Env (Maybe Type)
+extract :: TypeCheck -> Maybe Type
+extract = flip runReader M.empty
+
+checkAlg :: Algebra ExpF TypeCheck
 checkAlg (VarExp (SimpleVar v)) = ask >>= return . M.lookup v
 checkAlg UnitExp = return $ Just UnitTy
 checkAlg NilExp = return $ Just NilTy
 checkAlg (IntExp _) = return $ Just IntTy
 checkAlg (StringExp _) = return $ Just StringTy
-checkAlg (CallExp funcName paramTypes) = ask >>= \env ->
+checkAlg (CallExp funcName params) = ask >>= \env ->
   return $ do { t <- M.lookup funcName env
+              ; ps <- traverse extract params
               ; case t of
-              (FuncTy tys ret) -> if tys == paraTypes then return ret else Nothing
+              (FuncTy tys ret) ->
+                if tys == ps then return ret else Nothing
               _ -> Nothing }
-checkAlg (OpExp t1 op t2) = if t1 == IntExp && t2 == IntExp
-                            then return $ Just IntExp
-                            else return Nothing
+checkAlg (OpExp rt1 op rt2) = return $ do { t1 <- extract rt1
+                                          ; t2 <- extract rt2
+                                          ; if t1 == IntTy && t2 == IntTy
+                                            then return IntTy
+                                            else Nothing }
