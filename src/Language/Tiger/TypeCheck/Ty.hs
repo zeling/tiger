@@ -33,15 +33,18 @@ checkAlg UnitExp = return $ Just UnitTy
 checkAlg NilExp = return $ Just NilTy
 checkAlg (IntExp _) = return $ Just IntTy
 checkAlg (StringExp _) = return $ Just StringTy
-checkAlg (CallExp funcName params) = ask >>= \env ->
+checkAlg (CallExp funcName rparams) = ask >>= \env ->
+  sequence rparams >>= \params ->
   return $ do { t <- M.lookup funcName env
-              ; ps <- traverse extract params
+              ; ps <- sequence params
               ; case t of
               (FuncTy tys ret) ->
                 if tys == ps then return ret else Nothing
               _ -> Nothing }
-checkAlg (OpExp rt1 op rt2) = return $ do { t1 <- extract rt1
-                                          ; t2 <- extract rt2
+checkAlg (OpExp rt1 op rt2) = do { r1 <- rt1
+                                 ; r2 <- rt2
+                                 ; return $ do { t1 <- r1
+                                          ; t2 <- r2
                                           ; if t1 == IntTy && t2 == IntTy
                                             then return IntTy
-                                            else Nothing }
+                                            else Nothing }}
