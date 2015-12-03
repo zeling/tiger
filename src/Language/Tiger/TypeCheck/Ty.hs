@@ -15,7 +15,7 @@ data Type = IntTy
           deriving (Eq, Show)
 
 type Env = M.Map String Type
-type TypeCheck = Reader Env (Maybe Type)
+type TypeCheck = ReaderT Env Maybe Type
 
 -- newtype TypeCheck = TypeCheck { runTypeCheck :: Reader Env Type }
 
@@ -25,26 +25,25 @@ typeCheck :: Exp -> Maybe Type
 typeCheck = extract . cata checkAlg
 
 extract :: TypeCheck -> Maybe Type
-extract = flip runReader M.empty
+extract = flip runReaderT M.empty
 
 checkAlg :: Algebra ExpF TypeCheck
-checkAlg (VarExp (SimpleVar v)) = ask >>= return . M.lookup v
-checkAlg UnitExp = return $ Just UnitTy
-checkAlg NilExp = return $ Just NilTy
-checkAlg (IntExp _) = return $ Just IntTy
-checkAlg (StringExp _) = return $ Just StringTy
-checkAlg (CallExp funcName rparams) = ask >>= \env ->
-  sequence rparams >>= \params ->
-  return $ do { t <- M.lookup funcName env
-              ; ps <- sequence params
-              ; case t of
-              (FuncTy tys ret) ->
-                if tys == ps then return ret else Nothing
-              _ -> Nothing }
-checkAlg (OpExp rt1 op rt2) = do { r1 <- rt1
-                                 ; r2 <- rt2
-                                 ; return $ do { t1 <- r1
-                                          ; t2 <- r2
-                                          ; if t1 == IntTy && t2 == IntTy
-                                            then return IntTy
-                                            else Nothing }}
+checkAlg (VarExp (SimpleVar v)) = ask >>= lift . M.lookup v
+checkAlg UnitExp = lift $ Just UnitTy
+checkAlg NilExp = lift $ Just NilTy
+checkAlg (IntExp _) = lift $ Just IntTy
+checkAlg (StringExp _) = lift $ Just StringTy
+checkAlg (CallExp name rparams) = do { env <- ask
+                                     ; params <- sequence rparams
+                                     --; params <- lift $ sequence mparams
+                                     ; t <- lift $ M.lookup name env
+                                     ; case t of
+                                     (FuncTy tys ret) ->
+                                       if tys == params
+                                       then return ret
+                                       else lift Nothing }
+checkAlg (OpExp rt1 op rt2) = do { t1 <- rt1
+                                  ; t2 <- rt2
+                                  ; if t1 == IntTy && t2 == IntTy
+                                    then return IntTy
+                                    else lift $ Nothing }

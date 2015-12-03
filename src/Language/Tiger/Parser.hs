@@ -1,4 +1,4 @@
 module Language.Tiger.Parser
-       ( module m ) where
+       ( module M ) where
 
-import qualified Language.Tiger.Parser.Parser as m (parseTiger)
+import qualified Language.Tiger.Parser.Grammar as M (parseTiger)
